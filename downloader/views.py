@@ -17,7 +17,7 @@ MAC_USER_AGENT = [
     'Mac_PowerPC',
 ]
 
-# Function to check if ip exist in a file already and write if it dosen't
+# Function to check if ip exist in a file already
 def search_str(file_path, word):
     with open(file_path, 'r') as file:
         # read all content of a file
@@ -65,7 +65,7 @@ def mobile_visit(request):
         return redirect('home')
     else:
         with open('text_logs/mobiles.txt', 'a') as file:
-            file.write(ip)
+            file.write(f'{ip} /n ')
 
     # Send telegram notification of mobile visit
 
@@ -87,7 +87,7 @@ def mac_visit(request):
         return redirect('home')
     else:
         with open('text_logs/macs.txt', 'a') as file:
-            file.write(ip)
+            file.write(f'{ip} /n ')
 
     # Send telegram notification of mobile visit
 
@@ -138,7 +138,7 @@ def download_file(request):
         return redirect('home')
     else:
         with open('text_logs/ip.txt', 'a') as file:
-            file.writelines(ip)
+            file.write(f'{ip} /n ')
 
         # Send download notification to telegram
         
