@@ -41,6 +41,7 @@ INSTALLED_APPS = [
 
     #Third party Applications
     'django_user_agents',
+    'captcha',
     
 ]
 

